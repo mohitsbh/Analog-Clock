@@ -3,92 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sun, Earth, and Moon</title>
+    <title>Analog and Digital Clock</title>
     <style>
-        body {
+        /* Basic reset and defaults */
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.5s, color 0.5s; /* Smooth transition for modes */
+        }
+
+        /* Container for dark/light mode toggle */
+        .toggle-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 50px;
+            padding: 10px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: black;
-            height: 100vh;
-            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
-        canvas {
-            display: block;
+
+        .toggle-container input {
+            width: 50px;
+            height: 25px;
+            border-radius: 25px;
+            appearance: none;
+            background-color: #ccc;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-container input:checked {
+            background-color: #333;
+        }
+
+        .toggle-container input:before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 19px;
+            height: 19px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-container input:checked:before {
+            transform: translateX(25px);
+        }
+
+        .clock {
+            width: 60vmin;
+            height: 60vmin;
+            border: 10px solid #ff9900;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            background: radial-gradient(circle, #ffb84d, #b36b00);
+            transition: background 0.5s, box-shadow 0.5s; /* Smooth background and shadow change */
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: 50% 100%;
+            transform: translateX(-50%);
+        }
+
+        .hour-hand, .minute-hand, .second-hand {
+            transition: transform 0.5s ease;
+        }
+
+        .hour-hand {
+            width: 6px;
+            height: 25%;
+            background-color: #fff;
+            z-index: 3;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .minute-hand {
+            width: 4px;
+            height: 35%;
+            background-color: #666;
+            z-index: 4;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 40%;
+            background-color: #ff0000;
+            z-index: 4;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        .center-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+           z-index: 6;
+            transform: translateX(-50%) translateY(50%);
+        }
+
+        .digital-clock {
+            font-family: 'Roboto', sans-serif;
+            font-size: 4vw; /* Responsive font size for digital clock */
+            color: #ff9900;
+            text-align: center;
+            margin-top: 15px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #ff6600, 0 0 20px #ff6600, 0 0 30px #ff6600;
+        }
+
+        .date-display {
+            font-size: 18px;
+            text-align: center;
+            color: #bbb;
+        }
+
+        /* Media Queries for responsive design */
+        @media (max-width: 768px) {
+            .clock {
+                width: 70vmin;
+                height: 70vmin;
+            }
+            .digital-clock {
+                font-size: 5vw;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .clock {
+                width: 80vmin;
+                height: 80vmin;
+            }
+            .digital-clock {
+                font-size: 6vw;
+            }
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: white;
+        }
+
+        .clock.dark-mode {
+            background: radial-gradient(circle, #6f4e37, #3b2f2a);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .digital-clock.dark-mode {
+            color: #ff9900;
+        }
+
+        .date-display.dark-mode {
+            color: #777;
         }
     </style>
 </head>
 <body>
-    <canvas id="solarCanvas"></canvas>
+
+    <!-- Dark/Light Mode Toggle -->
+    <div class="toggle-container">
+        <input type="checkbox" id="modeToggle">
+    </div>
+
+    <!-- Analog Clock and Date -->
+    <div class="clock">
+        <div class="center-dot"></div>
+        <div class="hand hour-hand" id="hourHand"></div>
+        <div class="hand minute-hand" id="minuteHand"></div>
+        <div class="hand second-hand" id="secondHand"></div>
+    </div>
+
+    <div class="digital-clock" id="digitalClock"></div>
+    <div class="date-display" id="dateDisplay"></div>
 
     <script>
-        const canvas = document.getElementById('solarCanvas');
-        const ctx = canvas.getContext('2d');
+        // Update Clock Function
+        function updateClock() {
+            const now = new Date();
 
-        // Set canvas to full-screen size
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Get the current time
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            // Calculate the degrees for each hand
+            const hourDeg = (hours % 12) * 30 + (minutes / 2); // Hour hand moves as minutes pass
+            const minuteDeg = minutes * 6; // 360°/60 minutes
+            const secondDeg = seconds * 6; // 360°/60 seconds
+
+            // Apply the calculated rotation to each clock hand
+            document.getElementById("hourHand").style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+            document.getElementById("minuteHand").style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+            
+            // Update the second hand with an immediate effect to avoid sudden jumps.
+            const secondHand = document.getElementById("secondHand");
+            secondHand.style.transition = "transform 0s linear"; // No transition for instant movement
+            secondHand.style.transform = `translateX(-50%) rotate(${secondDeg}deg)`; 
+
+            // Update the digital clock
+            let displayHours = hours < 10 ? "0" + hours : hours;
+            let displayMinutes = minutes < 10 ? "0" + minutes : minutes;
+            let displaySeconds = seconds < 10 ? "0" + seconds : seconds;
+            document.getElementById("digitalClock").textContent = displayHours + ":" + displayMinutes + ":" + displaySeconds;
+
+            // Update the date
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const dateString = now.toLocaleDateString('en-US', options);
+            document.getElementById("dateDisplay").textContent = dateString;
         }
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        // Dark/Light Mode Toggle Event Listener
+        const toggleSwitch = document.getElementById("modeToggle");
+        toggleSwitch.addEventListener("change", () => {
+            document.body.classList.toggle("dark-mode");
+            document.querySelector(".clock").classList.toggle("dark-mode");
+            document.getElementById("digitalClock").classList.toggle("dark-mode");
+            document.getElementById("dateDisplay").classList.toggle("dark-mode");
+        });
 
-        const sun = { radius: 50, color: 'yellow' };
-        const earth = { distance: 200, radius: 15, color: 'blue', speed: 0.01, angle: 0 };
-        const moon = { distance: 40, radius: 5, color: 'white', speed: 0.05, angle: 0 };
+        // Update the clock every second
+        setInterval(updateClock, 1000);
 
-        function drawSun(centerX, centerY) {
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, sun.radius, 0, Math.PI * 2);
-            ctx.fillStyle = sun.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function drawEarth(centerX, centerY) {
-            earth.x = centerX + earth.distance * Math.cos(earth.angle);
-            earth.y = centerY + earth.distance * Math.sin(earth.angle);
-
-            ctx.beginPath();
-            ctx.arc(earth.x, earth.y, earth.radius, 0, Math.PI * 2);
-            ctx.fillStyle = earth.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function drawMoon() {
-            const moonX = earth.x + moon.distance * Math.cos(moon.angle);
-            const moonY = earth.y + moon.distance * Math.sin(moon.angle);
-
-            ctx.beginPath();
-            ctx.arc(moonX, moonY, moon.radius, 0, Math.PI * 2);
-            ctx.fillStyle = moon.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Center the solar system in the middle of the canvas
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-
-            // Draw Sun, Earth, and Moon
-            drawSun(centerX, centerY);
-            drawEarth(centerX, centerY);
-            drawMoon();
-
-            // Update angles for movement
-            earth.angle += earth.speed;
-            moon.angle += moon.speed;
-
-            requestAnimationFrame(animate);
-        }
-
-        animate();
+        // Initialize the clock immediately
+        updateClock();
     </script>
+
 </body>
 </html>
