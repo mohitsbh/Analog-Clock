@@ -123,8 +123,20 @@
             position: absolute;
             bottom: 50%;
             left: 50%;
-           z-index: 6;
+            z-index: 6;
             transform: translateX(-50%) translateY(50%);
+        }
+
+        /* Date Display Inside Clock (Right Side) */
+        .date-inside-clock {
+            font-size: 18px;
+            color: white;
+            position: absolute;
+            top: 45%;
+            right: 7%;
+            font-family: 'Roboto', sans-serif;
+            font-weight: bold;
+            
         }
 
         .digital-clock {
@@ -182,6 +194,10 @@
         .date-display.dark-mode {
             color: #777;
         }
+
+        .date-inside-clock.dark-mode {
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +213,8 @@
         <div class="hand hour-hand" id="hourHand"></div>
         <div class="hand minute-hand" id="minuteHand"></div>
         <div class="hand second-hand" id="secondHand"></div>
+        <!-- Date inside the Clock (Right Side) -->
+        <div class="date-inside-clock" id="dateInsideClock"></div>
     </div>
 
     <div class="digital-clock" id="digitalClock"></div>
@@ -232,10 +250,15 @@
             let displaySeconds = seconds < 10 ? "0" + seconds : seconds;
             document.getElementById("digitalClock").textContent = displayHours + ":" + displayMinutes + ":" + displaySeconds;
 
-            // Update the date
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            const dateString = now.toLocaleDateString('en-US', options);
-            document.getElementById("dateDisplay").textContent = dateString;
+            // Update the date inside the clock (only day and date)
+            const optionsDayDate = { weekday: 'short', day: 'numeric' };
+            const dayDateString = now.toLocaleDateString('en-US', optionsDayDate);
+            document.getElementById("dateInsideClock").textContent = dayDateString;
+
+            // Update the full date (month, year) near the digital clock
+            const optionsFullDate = { year: 'numeric', month: 'long', day: 'numeric' };
+            const fullDateString = now.toLocaleDateString('en-US', optionsFullDate);
+            document.getElementById("dateDisplay").textContent = fullDateString;
         }
 
         // Dark/Light Mode Toggle Event Listener
@@ -245,6 +268,7 @@
             document.querySelector(".clock").classList.toggle("dark-mode");
             document.getElementById("digitalClock").classList.toggle("dark-mode");
             document.getElementById("dateDisplay").classList.toggle("dark-mode");
+            document.getElementById("dateInsideClock").classList.toggle("dark-mode");
         });
 
         // Update the clock every second
